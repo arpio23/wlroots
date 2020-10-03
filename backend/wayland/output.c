@@ -590,7 +590,7 @@ struct wlr_output *wlr_wl_output_create(struct wlr_backend *wlr_backend) {
 	struct wlr_wl_seat *seat = backend->seat;
 	if (seat != NULL) {
 		if (seat->pointer) {
-			create_wl_pointer(seat->pointer, output);
+			create_wl_pointer(seat, output);
 		}
 	}
 
