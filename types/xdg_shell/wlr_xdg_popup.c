@@ -420,7 +420,7 @@ void wlr_xdg_popup_get_toplevel_coords(struct wlr_xdg_popup *popup,
 }
 
 static void xdg_popup_box_constraints(struct wlr_xdg_popup *popup,
-		struct wlr_box *toplevel_sx_box, int *offset_x, int *offset_y) {
+		const struct wlr_box *toplevel_sx_box, int *offset_x, int *offset_y) {
 	int popup_width = popup->geometry.width;
 	int popup_height = popup->geometry.height;
 	int anchor_sx = 0, anchor_sy = 0;
@@ -448,7 +448,7 @@ static void xdg_popup_box_constraints(struct wlr_xdg_popup *popup,
 }
 
 static bool xdg_popup_unconstrain_flip(struct wlr_xdg_popup *popup,
-		struct wlr_box *toplevel_sx_box) {
+		const struct wlr_box *toplevel_sx_box) {
 	int offset_x = 0, offset_y = 0;
 	xdg_popup_box_constraints(popup, toplevel_sx_box,
 		&offset_x, &offset_y);
@@ -498,7 +498,7 @@ static bool xdg_popup_unconstrain_flip(struct wlr_xdg_popup *popup,
 }
 
 static bool xdg_popup_unconstrain_slide(struct wlr_xdg_popup *popup,
-		struct wlr_box *toplevel_sx_box) {
+		const struct wlr_box *toplevel_sx_box) {
 	int offset_x = 0, offset_y = 0;
 	xdg_popup_box_constraints(popup, toplevel_sx_box,
 		&offset_x, &offset_y);
@@ -541,7 +541,7 @@ static bool xdg_popup_unconstrain_slide(struct wlr_xdg_popup *popup,
 }
 
 static bool xdg_popup_unconstrain_resize(struct wlr_xdg_popup *popup,
-		struct wlr_box *toplevel_sx_box) {
+		const struct wlr_box *toplevel_sx_box) {
 	int offset_x, offset_y;
 	xdg_popup_box_constraints(popup, toplevel_sx_box,
 		&offset_x, &offset_y);
@@ -572,7 +572,7 @@ static bool xdg_popup_unconstrain_resize(struct wlr_xdg_popup *popup,
 }
 
 void wlr_xdg_popup_unconstrain_from_box(struct wlr_xdg_popup *popup,
-		struct wlr_box *toplevel_sx_box) {
+		const struct wlr_box *toplevel_sx_box) {
 	if (xdg_popup_unconstrain_flip(popup, toplevel_sx_box)) {
 		return;
 	}
