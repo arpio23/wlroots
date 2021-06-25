@@ -3,7 +3,7 @@ project(
 	'c',
 	version: '0.12.0',
 	license: 'MIT',
-	meson_version: '>=0.54.0',
+	meson_version: '>=0.58.1',
 	default_options: [
 		'c_std=c11',
 		'warning_level=2',
@@ -55,7 +55,7 @@ add_project_link_arguments(
 
 # Compute the relative path used by compiler invocations.
 source_root = meson.current_source_dir().split('/')
-build_root = meson.build_root().split('/')
+build_root = meson.global_build_root().split('/')
 relative_dir_parts = []
 i = 0
 in_prefix = true
