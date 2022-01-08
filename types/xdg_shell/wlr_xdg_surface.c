@@ -305,7 +305,7 @@ static void xdg_surface_handle_surface_commit(struct wl_listener *listener,
 	}
 }
 
-void handle_xdg_surface_commit(struct wlr_surface *wlr_surface) {
+void xdg_surface_role_commit(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_wlr_surface(wlr_surface);
 	if (surface == NULL) {
@@ -342,7 +342,7 @@ void handle_xdg_surface_commit(struct wlr_surface *wlr_surface) {
 	}
 }
 
-void handle_xdg_surface_precommit(struct wlr_surface *wlr_surface) {
+void xdg_surface_role_precommit(struct wlr_surface *wlr_surface) {
 	struct wlr_xdg_surface *surface =
 		wlr_xdg_surface_from_wlr_surface(wlr_surface);
 	if (surface == NULL) {
