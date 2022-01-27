@@ -15,7 +15,6 @@ struct wlr_headless_backend {
 	struct wl_display *display;
 	struct wl_list outputs;
 	size_t last_output_num;
-	struct wl_list input_devices;
 	struct wl_listener display_destroy;
 	struct wl_listener renderer_destroy;
 	bool started;
@@ -32,12 +31,6 @@ struct wlr_headless_output {
 
 	struct wl_event_source *frame_timer;
 	int frame_delay; // ms
-};
-
-struct wlr_headless_input_device {
-	struct wlr_input_device wlr_input_device;
-
-	struct wlr_headless_backend *backend;
 };
 
 struct wlr_headless_backend *headless_backend_from_backend(
