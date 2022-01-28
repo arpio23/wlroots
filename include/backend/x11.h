@@ -61,7 +61,6 @@ struct wlr_x11_backend {
 	struct wl_list outputs; // wlr_x11_output::link
 
 	struct wlr_keyboard keyboard;
-	struct wlr_input_device keyboard_dev;
 
 	struct wlr_egl egl;
 	struct wlr_renderer *renderer;
