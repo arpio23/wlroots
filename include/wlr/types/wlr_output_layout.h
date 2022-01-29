@@ -14,7 +14,6 @@
 #include <wlr/types/wlr_output.h>
 
 struct wlr_box;
-struct wlr_output_layout_state;
 
 /**
  * Helper to arrange outputs in a 2D coordinate space. The output effective
@@ -26,7 +25,6 @@ struct wlr_output_layout_state;
  */
 struct wlr_output_layout {
 	struct wl_list outputs;
-	struct wlr_output_layout_state *state;
 
 	struct {
 		struct wl_signal add;
