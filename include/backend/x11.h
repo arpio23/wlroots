@@ -29,7 +29,6 @@ struct wlr_x11_output {
 	EGLSurface surf;
 
 	struct wlr_pointer pointer;
-	struct wlr_input_device pointer_dev;
 
 	struct wlr_touch touch;
 	struct wlr_input_device touch_dev;

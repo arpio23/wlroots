@@ -80,7 +80,9 @@ static void output_destroy(struct wlr_output *wlr_output) {
 	struct wlr_x11_output *output = get_x11_output_from_output(wlr_output);
 	struct wlr_x11_backend *x11 = output->x11;
 
-	wlr_input_device_destroy(&output->pointer_dev);
+	pixman_region32_fini(&output->exposed);
+
+	wlr_pointer_destroy(&output->pointer);
 	wlr_input_device_destroy(&output->touch_dev);
 
 	wl_list_remove(&output->link);
@@ -255,11 +257,8 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	wl_event_source_timer_update(output->frame_timer, output->frame_delay);
 	wlr_output_update_enabled(wlr_output, true);
 
-	wlr_input_device_init(&output->pointer_dev, WLR_INPUT_DEVICE_POINTER,
-		&input_device_impl, "X11 pointer");
-	wlr_pointer_init(&output->pointer, &pointer_impl);
-	output->pointer_dev.pointer = &output->pointer;
-	output->pointer_dev.output_name = strdup(wlr_output->name);
+	wlr_pointer_init(&output->pointer, &pointer_impl, "x11-pointer");
+	output->pointer.base.output_name = strdup(wlr_output->name);
 
 	wlr_input_device_init(&output->touch_dev, WLR_INPUT_DEVICE_TOUCH,
 		&input_device_impl, "X11 touch");
@@ -269,7 +268,7 @@ struct wlr_output *wlr_x11_output_create(struct wlr_backend *backend) {
 	wl_list_init(&output->touchpoints);
 
 	wlr_signal_emit_safe(&x11->backend.events.new_output, wlr_output);
-	wlr_signal_emit_safe(&x11->backend.events.new_input, &output->pointer_dev);
+	wlr_signal_emit_safe(&x11->backend.events.new_input, &output->pointer.base);
 	wlr_signal_emit_safe(&x11->backend.events.new_input, &output->touch_dev);
 
 	return wlr_output;
