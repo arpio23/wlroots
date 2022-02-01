@@ -60,7 +60,9 @@ struct wlr_tablet_tool {
 struct wlr_tablet_impl;
 
 struct wlr_tablet {
-	struct wlr_tablet_impl *impl;
+	struct wlr_input_device base;
+
+	const struct wlr_tablet_impl *impl;
 
 	struct {
 		struct wl_signal axis;
