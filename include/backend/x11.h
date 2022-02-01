@@ -31,7 +31,6 @@ struct wlr_x11_output {
 	struct wlr_pointer pointer;
 
 	struct wlr_touch touch;
-	struct wlr_input_device touch_dev;
 	struct wl_list touchpoints; // wlr_x11_touchpoint::link
 
 	struct wl_event_source *frame_timer;
