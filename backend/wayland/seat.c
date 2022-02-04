@@ -471,8 +471,7 @@ struct wlr_wl_input_device *create_wl_input_device(
 	char name[name_size];
 	(void) snprintf(name, name_size, "wayland-%s", seat->name);
 
-	wlr_input_device_init(wlr_dev, type, &input_device_impl, name, vendor,
-		product);
+	wlr_input_device_init(wlr_dev, type, &input_device_impl, name);
 	wl_list_insert(&seat->backend->devices, &wlr_dev->link);
 	return dev;
 }
