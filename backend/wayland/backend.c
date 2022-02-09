@@ -190,7 +190,7 @@ static void backend_destroy(struct wlr_backend *backend) {
 
 	struct wlr_wl_input_device *input_device, *tmp_input_device;
 	wl_list_for_each_safe(input_device, tmp_input_device, &wl->devices, link) {
-		wlr_input_device_destroy(&input_device->wlr_input_device);
+		destroy_wl_input_device(input_device);
 	}
 
 	wlr_signal_emit_safe(&wl->backend.events.destroy, &wl->backend);
