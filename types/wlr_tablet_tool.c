@@ -17,21 +17,12 @@ void wlr_tablet_init(struct wlr_tablet *tablet,
 	wl_array_init(&tablet->paths);
 }
 
-void wlr_tablet_destroy(struct wlr_tablet *tablet) {
-	if (!tablet) {
-		return;
-	}
+void wlr_tablet_finish(struct wlr_tablet *tablet) {
+	wlr_input_device_finish(&tablet->base);
 
 	char *path;
 	wl_array_for_each(path, &tablet->paths) {
 		free(path);
 	}
 	wl_array_release(&tablet->paths);
-
-	wlr_input_device_finish(&tablet->base);
-	if (tablet->impl && tablet->impl->destroy) {
-		tablet->impl->destroy(tablet);
-	} else {
-		free(tablet);
-	}
 }
