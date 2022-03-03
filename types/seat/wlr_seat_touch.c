@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 #include <wayland-server-core.h>
-#include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/util/log.h>
 #include "types/wlr_seat.h"
 #include "util/signal.h"
@@ -41,11 +41,6 @@ static void default_touch_cancel(struct wlr_seat_touch_grab *grab) {
 	// cannot be cancelled
 }
 
-static void default_touch_wl_cancel(struct wlr_seat_touch_grab *grab,
-		struct wlr_surface *surface) {
-	wlr_seat_touch_send_cancel(grab->seat, surface);
-}
-
 const struct wlr_touch_grab_interface default_touch_grab_impl = {
 	.down = default_touch_down,
 	.up = default_touch_up,
@@ -53,7 +48,6 @@ const struct wlr_touch_grab_interface default_touch_grab_impl = {
 	.enter = default_touch_enter,
 	.frame = default_touch_frame,
 	.cancel = default_touch_cancel,
-	.wl_cancel = default_touch_wl_cancel,
 };
 
 
@@ -244,26 +238,6 @@ void wlr_seat_touch_notify_frame(struct wlr_seat *seat) {
 	}
 }
 
-void wlr_seat_touch_notify_cancel(struct wlr_seat *seat,
-		struct wlr_surface *surface) {
-	struct wlr_seat_touch_grab *grab = seat->touch_state.grab;
-	if (grab->interface->wl_cancel) {
-		grab->interface->wl_cancel(grab, surface);
-	}
-
-	struct wl_client *client = wl_resource_get_client(surface->resource);
-	struct wlr_seat_client *seat_client = wlr_seat_client_for_wl_client(seat, client);
-	if (seat_client == NULL) {
-		return;
-	}
-	struct wlr_touch_point *point, *tmp;
-	wl_list_for_each_safe(point, tmp, &seat->touch_state.touch_points, link) {
-		if (point->client == seat_client) {
-			touch_point_destroy(point);
-		}
-	}
-}
-
 static void handle_point_focus_destroy(struct wl_listener *listener,
 		void *data) {
 	struct wlr_touch_point *point =
@@ -399,22 +373,6 @@ void wlr_seat_touch_send_frame(struct wlr_seat *seat) {
 			wl_touch_send_frame(resource);
 		}
 		seat_client->needs_touch_frame = false;
-	}
-}
-
-void wlr_seat_touch_send_cancel(struct wlr_seat *seat, struct wlr_surface *surface) {
-	struct wl_client *client = wl_resource_get_client(surface->resource);
-	struct wlr_seat_client *seat_client = wlr_seat_client_for_wl_client(seat, client);
-	if (seat_client == NULL) {
-		return;
-	}
-
-	struct wl_resource *resource;
-	wl_resource_for_each(resource, &seat_client->touches) {
-		if (seat_client_from_touch_resource(resource) == NULL) {
-			continue;
-		}
-		wl_touch_send_cancel(resource);
 	}
 }
 
