@@ -51,7 +51,9 @@ void wlr_pointer_gestures_v1_send_swipe_begin(
 		uint32_t time_msec,
 		uint32_t fingers) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -78,7 +80,9 @@ void wlr_pointer_gestures_v1_send_swipe_update(
 		double dx,
 		double dy) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -102,7 +106,9 @@ void wlr_pointer_gestures_v1_send_swipe_end(
 		uint32_t time_msec,
 		bool cancelled) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -163,7 +169,9 @@ void wlr_pointer_gestures_v1_send_pinch_begin(
 		uint32_t time_msec,
 		uint32_t fingers) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -192,7 +200,9 @@ void wlr_pointer_gestures_v1_send_pinch_update(
 		double scale,
 		double rotation) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -218,7 +228,9 @@ void wlr_pointer_gestures_v1_send_pinch_end(
 		uint32_t time_msec,
 		bool cancelled) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -284,7 +296,9 @@ void wlr_pointer_gestures_v1_send_hold_begin(
 		uint32_t time_msec,
 		uint32_t fingers) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
@@ -310,7 +324,9 @@ void wlr_pointer_gestures_v1_send_hold_end(
 		uint32_t time_msec,
 		bool cancelled) {
 	struct wlr_surface *focus = seat->pointer_state.focused_surface;
-	if (focus == NULL) {
+	struct wlr_seat_client *focus_seat_client =
+		seat->pointer_state.focused_client;
+	if (focus == NULL || focus_seat_client == NULL) {
 		return;
 	}
 
