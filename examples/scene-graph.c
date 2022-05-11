@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 	struct wlr_compositor *compositor =
 		wlr_compositor_create(server.display, renderer);
 
-	wlr_xdg_shell_create(server.display);
+	wlr_xdg_shell_create(server.display, 2);
 
 	wl_list_init(&server.outputs);
 	wl_list_init(&server.surfaces);
