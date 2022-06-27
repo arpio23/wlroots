@@ -73,7 +73,7 @@ struct wlr_keyboard {
 
 	struct {
 		/**
-		 * The `key` event signals with a `wlr_event_keyboard_key` event that a
+		 * The `key` event signals with a struct wlr_keyboard_key_event that a
 		 * key has been pressed or released on the keyboard. This event is
 		 * emitted before the xkb state of the keyboard has been updated
 		 * (including modifiers).
