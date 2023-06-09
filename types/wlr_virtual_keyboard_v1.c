@@ -8,6 +8,7 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 #include "util/signal.h"
+#include "util/time.h"
 #include "virtual-keyboard-unstable-v1-protocol.h"
 
 /**

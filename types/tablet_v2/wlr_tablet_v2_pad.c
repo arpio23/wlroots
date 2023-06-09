@@ -7,11 +7,13 @@
 #include <stdlib.h>
 #include <types/wlr_tablet_v2.h>
 #include <wayland-util.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_tablet_pad.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
 
-static struct wlr_tablet_pad_v2_grab_interface default_pad_grab_interface;
+static const struct wlr_tablet_pad_v2_grab_interface default_pad_grab_interface;
 
 struct tablet_pad_auxiliary_user_data {
 	struct wlr_tablet_pad_client_v2 *pad;
@@ -57,7 +59,7 @@ static void handle_tablet_pad_ring_v2_destroy(struct wl_client *client,
 	wl_resource_destroy(resource);
 }
 
-static struct zwp_tablet_pad_ring_v2_interface tablet_pad_ring_impl = {
+static const struct zwp_tablet_pad_ring_v2_interface tablet_pad_ring_impl = {
 	.set_feedback = handle_tablet_pad_ring_v2_set_feedback,
 	.destroy = handle_tablet_pad_ring_v2_destroy,
 };
@@ -95,7 +97,7 @@ static void handle_tablet_pad_strip_v2_destroy(struct wl_client *client,
 	wl_resource_destroy(resource);
 }
 
-static struct zwp_tablet_pad_strip_v2_interface tablet_pad_strip_impl = {
+static const struct zwp_tablet_pad_strip_v2_interface tablet_pad_strip_impl = {
 	.set_feedback = handle_tablet_pad_strip_v2_set_feedback,
 	.destroy = handle_tablet_pad_strip_v2_destroy,
 };
@@ -117,7 +119,7 @@ static void handle_tablet_pad_v2_set_feedback( struct wl_client *client,
 	wl_signal_emit(&pad->pad->events.button_feedback, &evt);
 }
 
-static struct zwp_tablet_pad_v2_interface tablet_pad_impl = {
+static const struct zwp_tablet_pad_v2_interface tablet_pad_impl = {
 	.set_feedback = handle_tablet_pad_v2_set_feedback,
 	.destroy = handle_tablet_pad_v2_destroy,
 };
@@ -183,7 +185,7 @@ static void handle_tablet_pad_group_v2_destroy(struct wl_client *client,
 	wl_resource_destroy(resource);
 }
 
-static struct zwp_tablet_pad_group_v2_interface tablet_pad_group_impl = {
+static const struct zwp_tablet_pad_group_v2_interface tablet_pad_group_impl = {
 	.destroy = handle_tablet_pad_group_v2_destroy,
 };
 
@@ -326,9 +328,9 @@ void add_tablet_pad_client(struct wlr_tablet_seat_client_v2 *seat,
 		zwp_tablet_pad_v2_send_buttons(client->resource, pad->wlr_pad->button_count);
 	}
 
-	const char *path;
-	wl_array_for_each(path, &pad->wlr_pad->paths) {
-		zwp_tablet_pad_v2_send_path(client->resource, path);
+	const char **path_ptr;
+	wl_array_for_each(path_ptr, &pad->wlr_pad->paths) {
+		zwp_tablet_pad_v2_send_path(client->resource, *path_ptr);
 	}
 
 	size_t i = 0;
@@ -698,7 +700,7 @@ static void default_pad_cancel(struct wlr_tablet_pad_v2_grab *grab) {
 	// Do nothing, the default cancel can be ignored.
 }
 
-static struct wlr_tablet_pad_v2_grab_interface default_pad_grab_interface  = {
+static const struct wlr_tablet_pad_v2_grab_interface default_pad_grab_interface  = {
 	.enter = default_pad_enter,
 	.button = default_pad_button,
 	.strip = default_pad_strip,

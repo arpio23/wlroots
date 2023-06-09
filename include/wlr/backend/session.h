@@ -6,23 +6,25 @@
 #include <sys/types.h>
 #include <wayland-server-core.h>
 
-struct session_impl;
+struct libseat;
 
 struct wlr_device {
 	int fd;
+	int device_id;
 	dev_t dev;
-	struct wl_signal signal;
-
 	struct wl_list link;
+
+	struct {
+		struct wl_signal change; // struct wlr_device_change_event
+		struct wl_signal remove;
+	} events;
 };
 
 struct wlr_session {
-	const struct session_impl *impl;
 	/*
 	 * Signal for when the session becomes active/inactive.
 	 * It's called when we swap virtual terminal.
 	 */
-	struct wl_signal session_signal;
 	bool active;
 
 	/*
@@ -36,13 +38,40 @@ struct wlr_session {
 	struct udev_monitor *mon;
 	struct wl_event_source *udev_event;
 
+	struct libseat *seat_handle;
+	struct wl_event_source *libseat_event;
+
 	struct wl_list devices;
 
+	struct wl_display *display;
 	struct wl_listener display_destroy;
 
 	struct {
+		struct wl_signal active;
+		struct wl_signal add_drm_card; // struct wlr_session_add_event
 		struct wl_signal destroy;
 	} events;
+};
+
+struct wlr_session_add_event {
+	const char *path;
+};
+
+enum wlr_device_change_type {
+	WLR_DEVICE_HOTPLUG = 1,
+	WLR_DEVICE_LEASE,
+};
+
+struct wlr_device_hotplug_event {
+	uint32_t connector_id;
+	uint32_t prop_id;
+};
+
+struct wlr_device_change_event {
+	enum wlr_device_change_type type;
+	union {
+		struct wlr_device_hotplug_event hotplug;
+	};
 };
 
 /*
@@ -50,8 +79,9 @@ struct wlr_session {
  * This should not be called if another program is already in control
  * of the terminal (Xorg, another Wayland compositor, etc.).
  *
- * If logind support is not enabled, you must have CAP_SYS_ADMIN or be root.
- * It is safe to drop privileges after this is called.
+ * If libseat support is not enabled, or if a standalone backend is to be used,
+ * then you must have CAP_SYS_ADMIN or be root. It is safe to drop privileges
+ * after this is called.
  *
  * Returns NULL on error.
  */
@@ -74,21 +104,21 @@ void wlr_session_destroy(struct wlr_session *session);
  *
  * Returns -errno on error.
  */
-int wlr_session_open_file(struct wlr_session *session, const char *path);
+struct wlr_device *wlr_session_open_file(struct wlr_session *session,
+	const char *path);
 
 /*
  * Closes a file previously opened with wlr_session_open_file.
  */
-void wlr_session_close_file(struct wlr_session *session, int fd);
+void wlr_session_close_file(struct wlr_session *session,
+	struct wlr_device *device);
 
-void wlr_session_signal_add(struct wlr_session *session, int fd,
-	struct wl_listener *listener);
 /*
  * Changes the virtual terminal.
  */
 bool wlr_session_change_vt(struct wlr_session *session, unsigned vt);
 
-size_t wlr_session_find_gpus(struct wlr_session *session,
-	size_t ret_len, int *ret);
+ssize_t wlr_session_find_gpus(struct wlr_session *session,
+	size_t ret_len, struct wlr_device **ret);
 
 #endif

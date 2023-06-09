@@ -2,8 +2,9 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-#include <wlr/config.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <drm_fourcc.h>
 #include <wayland-server-core.h>
@@ -153,7 +154,7 @@ static const struct wl_registry_listener registry_listener = {
  */
 static bool backend_start(struct wlr_backend *backend) {
 	struct wlr_wl_backend *wl = get_wl_backend_from_backend(backend);
-	wlr_log(WLR_INFO, "Initializating wayland backend");
+	wlr_log(WLR_INFO, "Starting Wayland backend");
 
 	wl->started = true;
 
@@ -187,9 +188,9 @@ static void backend_destroy(struct wlr_backend *backend) {
 		wlr_output_destroy(&output->wlr_output);
 	}
 
-	struct wlr_input_device *input_device, *tmp_input_device;
+	struct wlr_wl_input_device *input_device, *tmp_input_device;
 	wl_list_for_each_safe(input_device, tmp_input_device, &wl->devices, link) {
-		wlr_input_device_destroy(input_device);
+		wlr_input_device_destroy(&input_device->wlr_input_device);
 	}
 
 	wlr_signal_emit_safe(&wl->backend.events.destroy, &wl->backend);
@@ -275,9 +276,9 @@ struct wlr_backend *wlr_wl_backend_create(struct wl_display *display,
 		wlr_log_errno(WLR_ERROR, "Could not obtain reference to remote registry");
 		goto error_display;
 	}
-
 	wl_registry_add_listener(wl->registry, &registry_listener, wl);
-	wl_display_roundtrip(wl->remote_display);
+
+	wl_display_roundtrip(wl->remote_display); // get globals
 
 	if (!wl->compositor) {
 		wlr_log(WLR_ERROR,

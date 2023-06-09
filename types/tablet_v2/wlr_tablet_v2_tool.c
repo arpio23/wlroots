@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <types/wlr_tablet_v2.h>
 #include <wayland-util.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
@@ -52,7 +53,7 @@ static void handle_tablet_tool_v2_destroy(struct wl_client *client,
 		struct wl_resource *resource) {
 	wl_resource_destroy(resource);
 }
-static struct zwp_tablet_tool_v2_interface tablet_tool_impl = {
+static const struct zwp_tablet_tool_v2_interface tablet_tool_impl = {
 	.set_cursor = handle_tablet_tool_v2_set_cursor,
 	.destroy = handle_tablet_tool_v2_destroy,
 };
@@ -849,6 +850,7 @@ void wlr_tablet_tool_v2_start_implicit_grab(
 	}
 
 	state->original = tool->focused_surface;
+	state->focused = tool->focused_surface;
 	grab->data = state;
 
 	wlr_tablet_tool_v2_start_grab(tool, grab);

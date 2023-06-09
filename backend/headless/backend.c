@@ -84,7 +84,6 @@ static bool backend_init(struct wlr_headless_backend *backend,
 	wlr_backend_init(&backend->backend, &backend_impl);
 	backend->display = display;
 	wl_list_init(&backend->outputs);
-	wl_list_init(&backend->input_devices);
 
 	backend->renderer = renderer;
 	backend->egl = wlr_gles2_renderer_get_egl(renderer);

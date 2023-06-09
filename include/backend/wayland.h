@@ -11,6 +11,7 @@
 #include <wlr/backend/wayland.h>
 #include <wlr/render/egl.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/types/wlr_pointer.h>
 #include <wlr/render/drm_format_set.h>
 
 struct wlr_wl_backend {
@@ -82,6 +83,7 @@ struct wlr_wl_output {
 
 struct wlr_wl_input_device {
 	struct wlr_input_device wlr_input_device;
+	struct wl_list link;
 	uint32_t fingers;
 
 	struct wlr_wl_backend *backend;

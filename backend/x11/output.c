@@ -80,8 +80,6 @@ static void output_destroy(struct wlr_output *wlr_output) {
 	struct wlr_x11_output *output = get_x11_output_from_output(wlr_output);
 	struct wlr_x11_backend *x11 = output->x11;
 
-	pixman_region32_fini(&output->exposed);
-
 	wlr_pointer_destroy(&output->pointer);
 	wlr_touch_destroy(&output->touch);
 

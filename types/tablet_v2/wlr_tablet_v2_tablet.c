@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <types/wlr_tablet_v2.h>
 #include <wayland-util.h>
+#include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_tool.h>
 #include <wlr/types/wlr_tablet_v2.h>
 #include <wlr/util/log.h>
@@ -30,7 +31,7 @@ static void handle_tablet_v2_destroy(struct wl_client *client,
 	wl_resource_destroy(resource);
 }
 
-static struct zwp_tablet_v2_interface tablet_impl = {
+static const struct zwp_tablet_v2_interface tablet_impl = {
 	.destroy = handle_tablet_v2_destroy,
 };
 
@@ -114,9 +115,9 @@ void add_tablet_client(struct wlr_tablet_seat_client_v2 *seat,
 	zwp_tablet_v2_send_id(client->resource,
 		tablet->wlr_device->vendor, tablet->wlr_device->product);
 
-	const char *path;
-	wl_array_for_each(path, &tablet->wlr_tablet->paths) {
-		zwp_tablet_v2_send_path(client->resource, path);
+	const char **path_ptr;
+	wl_array_for_each(path_ptr, &tablet->wlr_tablet->paths) {
+		zwp_tablet_v2_send_path(client->resource, *path_ptr);
 	}
 
 	zwp_tablet_v2_send_done(client->resource);

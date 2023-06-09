@@ -1,17 +1,12 @@
-#define _POSIX_C_SOURCE 200809L
-#include <fcntl.h>
 #include <assert.h>
 #include <libinput.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <wlr/backend/interface.h>
 #include <wlr/backend/session.h>
 #include <wlr/util/log.h>
 #include "backend/libinput.h"
 #include "util/signal.h"
-
-#if WLR_HAS_DROIDIAN_EXTENSIONS
-#include <unistd.h>
-#endif // WLR_HAS_DROIDIAN_EXTENSIONS
 
 static struct wlr_libinput_backend *get_libinput_backend_from_backend(
 		struct wlr_backend *wlr_backend) {
@@ -21,30 +16,28 @@ static struct wlr_libinput_backend *get_libinput_backend_from_backend(
 
 static int libinput_open_restricted(const char *path,
 		int flags, void *_backend) {
-#if WLR_HAS_DROIDIAN_EXTENSIONS
-	// Droidian: avoid going through wlr_session to avoid take/pause/release
-	// loops with ever-changing file descriptors on sleep "loops".
-	// This doesn't assume a multi-seat environment, but we don't care
-	// about that for now.
-	//
-	// This is equivalent to the 'noop' wlroots session backend.
-	return open(path, O_RDWR | O_CLOEXEC | O_NONBLOCK);
-#else
 	struct wlr_libinput_backend *backend = _backend;
-
-	return wlr_session_open_file(backend->session, path);
-#endif // WLR_HAS_DROIDIAN_EXTENSIONS
+	struct wlr_device *dev = wlr_session_open_file(backend->session, path);
+	if (dev == NULL) {
+		return -1;
+	}
+	return dev->fd;
 }
 
 static void libinput_close_restricted(int fd, void *_backend) {
-#if WLR_HAS_DROIDIAN_EXTENSIONS
-	// Droidian: as above
-	close(fd);
-#else
 	struct wlr_libinput_backend *backend = _backend;
 
-	wlr_session_close_file(backend->session, fd);
-#endif // WLR_HAS_DROIDIAN_EXTENSIONS
+	struct wlr_device *dev;
+	bool found = false;
+	wl_list_for_each(dev, &backend->session->devices, link) {
+		if (dev->fd == fd) {
+			found = true;
+			break;
+		}
+	}
+	if (found) {
+		wlr_session_close_file(backend->session, dev);
+	}
 }
 
 static const struct libinput_interface libinput_impl = {
@@ -54,9 +47,10 @@ static const struct libinput_interface libinput_impl = {
 
 static int handle_libinput_readable(int fd, uint32_t mask, void *_backend) {
 	struct wlr_libinput_backend *backend = _backend;
-	if (libinput_dispatch(backend->libinput_context) != 0) {
-		wlr_log(WLR_ERROR, "Failed to dispatch libinput");
-		// TODO: some kind of abort?
+	int ret = libinput_dispatch(backend->libinput_context);
+	if (ret != 0) {
+		wlr_log(WLR_ERROR, "Failed to dispatch libinput: %s", strerror(-ret));
+		wl_display_terminate(backend->display);
 		return 0;
 	}
 	struct libinput_event *event;
@@ -90,7 +84,7 @@ static void log_libinput(struct libinput *libinput_context,
 static bool backend_start(struct wlr_backend *wlr_backend) {
 	struct wlr_libinput_backend *backend =
 		get_libinput_backend_from_backend(wlr_backend);
-	wlr_log(WLR_DEBUG, "Initializing libinput");
+	wlr_log(WLR_DEBUG, "Starting libinput backend");
 
 	backend->libinput_context = libinput_udev_create_context(&libinput_impl,
 		backend, backend->session->udev);
@@ -147,15 +141,16 @@ static void backend_destroy(struct wlr_backend *wlr_backend) {
 	struct wlr_libinput_backend *backend =
 		get_libinput_backend_from_backend(wlr_backend);
 
-	struct wl_list *wlr_devices;
-	wl_array_for_each(wlr_devices, &backend->wlr_device_lists) {
-		struct wlr_input_device *wlr_dev, *next;
-		wl_list_for_each_safe(wlr_dev, next, wlr_devices, link) {
-			wlr_input_device_destroy(wlr_dev);
+	struct wl_list **wlr_devices_ptr;
+	wl_array_for_each(wlr_devices_ptr, &backend->wlr_device_lists) {
+		struct wlr_libinput_input_device *dev, *tmp;
+		wl_list_for_each_safe(dev, tmp, *wlr_devices_ptr, link) {
+			wlr_input_device_destroy(&dev->wlr_input_device);
 		}
-		free(wlr_devices);
+		free(*wlr_devices_ptr);
 	}
-
+	
+	//wlr_backend_finish(wlr_backend);
 	wlr_signal_emit_safe(&wlr_backend->events.destroy, wlr_backend);
 
 	wl_list_remove(&backend->display_destroy.link);
@@ -190,16 +185,6 @@ static void session_signal(struct wl_listener *listener, void *data) {
 
 	if (session->active) {
 		libinput_resume(backend->libinput_context);
-
-		// HACK: Forcibly process events if there are any queued
-		// On some devices it has been observed event processing
-		// getting stuck on resume.
-		enum libinput_event_type next_event =
-			libinput_next_event_type(backend->libinput_context);
-		if (next_event != LIBINPUT_EVENT_NONE) {
-			handle_libinput_readable(libinput_get_fd(backend->libinput_context),
-				WL_EVENT_READABLE, backend);
-		}
 	} else {
 		libinput_suspend(backend->libinput_context);
 	}
@@ -233,7 +218,7 @@ struct wlr_backend *wlr_libinput_backend_create(struct wl_display *display,
 	backend->display = display;
 
 	backend->session_signal.notify = session_signal;
-	wl_signal_add(&session->session_signal, &backend->session_signal);
+	wl_signal_add(&session->events.active, &backend->session_signal);
 
 	backend->session_destroy.notify = handle_session_destroy;
 	wl_signal_add(&session->events.destroy, &backend->session_destroy);

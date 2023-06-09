@@ -25,12 +25,13 @@
 static struct wlr_wl_pointer *output_get_pointer(
 		struct wlr_wl_output *output,
 		const struct wl_pointer *wl_pointer) {
-	struct wlr_input_device *wlr_dev;
-	wl_list_for_each(wlr_dev, &output->backend->devices, link) {
-		if (wlr_dev->type != WLR_INPUT_DEVICE_POINTER) {
+	struct wlr_wl_input_device *dev;
+	wl_list_for_each(dev, &output->backend->devices, link) {
+		if (dev->wlr_input_device.type != WLR_INPUT_DEVICE_POINTER) {
 			continue;
 		}
-		struct wlr_wl_pointer *pointer = pointer_get_wl(wlr_dev->pointer);
+		struct wlr_wl_pointer *pointer =
+			pointer_get_wl(dev->wlr_input_device.pointer);
 		if (pointer->output == output && pointer->wl_pointer == wl_pointer) {
 			return pointer;
 		}
@@ -281,7 +282,7 @@ static void keyboard_handle_repeat_info(void *data,
 	// This space is intentionally left blank
 }
 
-static struct wl_keyboard_listener keyboard_listener = {
+static const struct wl_keyboard_listener keyboard_listener = {
 	.keymap = keyboard_handle_keymap,
 	.enter = keyboard_handle_enter,
 	.leave = keyboard_handle_leave,
@@ -372,7 +373,7 @@ static void touch_handle_orientation(void *data, struct wl_touch *wl_touch,
 	// no-op
 }
 
-static struct wl_touch_listener touch_listener = {
+static const struct wl_touch_listener touch_listener = {
 	.down = touch_handle_down,
 	.up = touch_handle_up,
 	.motion = touch_handle_motion,
@@ -440,11 +441,11 @@ static void input_device_destroy(struct wlr_input_device *wlr_dev) {
 	}
 	// We can't destroy pointer here because we might have multiple devices
 	// exposing it to compositor.
-	wl_list_remove(&dev->wlr_input_device.link);
+	wl_list_remove(&dev->link);
 	free(dev);
 }
 
-static struct wlr_input_device_impl input_device_impl = {
+static const struct wlr_input_device_impl input_device_impl = {
 	.destroy = input_device_destroy,
 };
 
@@ -465,18 +466,39 @@ struct wlr_wl_input_device *create_wl_input_device(
 
 	struct wlr_input_device *wlr_dev = &dev->wlr_input_device;
 
-	unsigned int vendor = 0, product = 0;
+	const char *type_name = "unknown";
 
-	size_t name_size = 8 + strlen(seat->name) + 1;
+	switch (type) {
+	case WLR_INPUT_DEVICE_KEYBOARD:
+		type_name = "keyboard";
+		break;
+	case WLR_INPUT_DEVICE_POINTER:
+		type_name = "pointer";
+		break;
+	case WLR_INPUT_DEVICE_TOUCH:
+		type_name = "touch";
+		break;
+	case WLR_INPUT_DEVICE_TABLET_TOOL:
+		type_name = "tablet-tool";
+		break;
+	case WLR_INPUT_DEVICE_TABLET_PAD:
+		type_name = "tablet-pad";
+		break;
+	case WLR_INPUT_DEVICE_SWITCH:
+		type_name = "switch";
+		break;
+	}
+
+	size_t name_size = 8 + strlen(type_name) + strlen(seat->name) + 1;
 	char name[name_size];
-	(void) snprintf(name, name_size, "wayland-%s", seat->name);
+	(void) snprintf(name, name_size, "wayland-%s-%s", type_name, seat->name);
 
 	wlr_input_device_init(wlr_dev, type, &input_device_impl, name);
-	wl_list_insert(&seat->backend->devices, &wlr_dev->link);
+	wl_list_insert(&seat->backend->devices, &dev->link);
 	return dev;
 }
 
-static struct wlr_pointer_impl pointer_impl;
+static const struct wlr_pointer_impl pointer_impl;
 
 struct wlr_wl_pointer *pointer_get_wl(struct wlr_pointer *wlr_pointer) {
 	assert(wlr_pointer->impl == &pointer_impl);
@@ -518,7 +540,7 @@ static void pointer_destroy(struct wlr_pointer *wlr_pointer) {
 	free(pointer);
 }
 
-static struct wlr_pointer_impl pointer_impl = {
+static const struct wlr_pointer_impl pointer_impl = {
 	.destroy = pointer_destroy,
 };
 
@@ -565,7 +587,7 @@ static void gesture_swipe_end(void *data,
 	wlr_signal_emit_safe(&wlr_dev->pointer->events.swipe_end, &wlr_event);
 }
 
-static struct zwp_pointer_gesture_swipe_v1_listener gesture_swipe_impl = {
+static const struct zwp_pointer_gesture_swipe_v1_listener gesture_swipe_impl = {
 	.begin = gesture_swipe_begin,
 	.update = gesture_swipe_update,
 	.end = gesture_swipe_end,
@@ -616,7 +638,7 @@ static void gesture_pinch_end(void *data,
 	wlr_signal_emit_safe(&wlr_dev->pointer->events.pinch_end, &wlr_event);
 }
 
-static struct zwp_pointer_gesture_pinch_v1_listener gesture_pinch_impl = {
+static const struct zwp_pointer_gesture_pinch_v1_listener gesture_pinch_impl = {
 	.begin = gesture_pinch_begin,
 	.update = gesture_pinch_update,
 	.end = gesture_pinch_end,
@@ -825,19 +847,20 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 
 		struct wl_pointer *wl_pointer = seat->pointer;
 
-		struct wlr_input_device *device, *tmp;
+		struct wlr_wl_input_device *device, *tmp;
 		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->type != WLR_INPUT_DEVICE_POINTER) {
+			if (device->wlr_input_device.type != WLR_INPUT_DEVICE_POINTER) {
 				continue;
 			}
-			struct wlr_wl_pointer *pointer = pointer_get_wl(device->pointer);
+			struct wlr_wl_pointer *pointer =
+				pointer_get_wl(device->wlr_input_device.pointer);
 			if (pointer->wl_pointer != wl_pointer) {
 				continue;
 			}
 			wlr_log(WLR_DEBUG, "dropping pointer %s",
 				pointer->input_device->wlr_input_device.name);
 			struct wlr_wl_output *output = pointer->output;
-			wlr_input_device_destroy(device);
+			wlr_input_device_destroy(&device->wlr_input_device);
 			assert(seat->active_pointer != pointer);
 			assert(output->cursor.pointer != pointer);
 		}
@@ -859,18 +882,16 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard != NULL) {
 		wlr_log(WLR_DEBUG, "seat %p dropped keyboard", (void *)wl_seat);
 
-		struct wlr_input_device *device, *tmp;
+		struct wlr_wl_input_device *device, *tmp;
 		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->type != WLR_INPUT_DEVICE_KEYBOARD) {
+			if (device->wlr_input_device.type != WLR_INPUT_DEVICE_KEYBOARD) {
 				continue;
 			}
 
-			struct wlr_wl_input_device *input_device =
-				get_wl_input_device_from_input_device(device);
-			if (input_device->seat != seat) {
+			if (device->seat != seat) {
 				continue;
 			}
-			wlr_input_device_destroy(device);
+			wlr_input_device_destroy(&device->wlr_input_device);
 		}
 		assert(seat->keyboard == NULL); // free'ed by input_device_destroy
 	}
@@ -886,10 +907,10 @@ static void seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
 	if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch != NULL) {
 		wlr_log(WLR_DEBUG, "seat %p dropped touch", (void *)wl_seat);
 
-		struct wlr_input_device *device, *tmp;
+		struct wlr_wl_input_device *device, *tmp;
 		wl_list_for_each_safe(device, tmp, &backend->devices, link) {
-			if (device->type == WLR_INPUT_DEVICE_TOUCH) {
-				wlr_input_device_destroy(device);
+			if (device->wlr_input_device.type == WLR_INPUT_DEVICE_TOUCH) {
+				wlr_input_device_destroy(&device->wlr_input_device);
 			}
 		}
 

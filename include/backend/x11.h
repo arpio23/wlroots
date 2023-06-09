@@ -11,6 +11,8 @@
 #include <wlr/config.h>
 #include <wlr/interfaces/wlr_input_device.h>
 #include <wlr/interfaces/wlr_output.h>
+#include <wlr/interfaces/wlr_touch.h>
+#include <wlr/types/wlr_pointer.h>
 #include <wlr/render/egl.h>
 #include <wlr/render/wlr_renderer.h>
 

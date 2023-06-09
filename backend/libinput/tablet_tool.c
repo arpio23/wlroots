@@ -14,7 +14,7 @@
 #include "util/array.h"
 #include "util/signal.h"
 
-static struct wlr_tablet_impl tablet_impl;
+static const struct wlr_tablet_impl tablet_impl;
 
 static bool tablet_is_libinput(struct wlr_tablet *tablet) {
 	return tablet->impl == &tablet_impl;
@@ -48,8 +48,9 @@ static void destroy_tablet(struct wlr_tablet *wlr_tablet) {
 	struct wlr_libinput_tablet *tablet =
 		wl_container_of(wlr_tablet, tablet, wlr_tablet);
 
-	struct wlr_libinput_tablet_tool *tool;
-	wl_array_for_each(tool, &tablet->tools) {
+	struct wlr_libinput_tablet_tool **tool_ptr;
+	wl_array_for_each(tool_ptr, &tablet->tools) {
+		struct wlr_libinput_tablet_tool *tool = *tool_ptr;
 		if (--tool->pad_refs == 0) {
 			destroy_tool(tool);
 		}
@@ -59,7 +60,7 @@ static void destroy_tablet(struct wlr_tablet *wlr_tablet) {
 	free(tablet);
 }
 
-static struct wlr_tablet_impl tablet_impl = {
+static const struct wlr_tablet_impl tablet_impl = {
 	.destroy = destroy_tablet,
 };
 
@@ -155,9 +156,9 @@ static void ensure_tool_reference(struct wlr_libinput_tablet_tool *tool,
 	struct wlr_libinput_tablet *tablet =
 		wl_container_of(wlr_dev, tablet, wlr_tablet);
 
-	struct wlr_libinput_tablet_tool *iter;
-	wl_array_for_each(iter, &tablet->tools) {
-		if (iter == tool) { // We already have a ref
+	struct wlr_libinput_tablet_tool **tool_ptr;
+	wl_array_for_each(tool_ptr, &tablet->tools) {
+		if (*tool_ptr == tool) { // We already have a ref
 			// XXX: We *could* optimize the tool to the front of
 			// the list here, since we will probably get the next
 			// couple of events from the same tool.

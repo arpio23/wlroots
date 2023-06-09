@@ -13,6 +13,8 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_pointer.h>
+
 #include <wlr/types/wlr_surface.h>
 
 #define WLR_SERIAL_RINGSET_SIZE 128
